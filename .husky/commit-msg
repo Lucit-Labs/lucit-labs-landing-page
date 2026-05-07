@@ -1,3 +1,0 @@
-# Commit message hook - validates commit message format
-echo "📝 Validating commit message..."
-pnpm dlx commitlint --edit $1

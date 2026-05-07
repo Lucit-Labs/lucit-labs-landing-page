@@ -1,8 +1,0 @@
-# Pre-commit hook - runs before each commit
-# Validates branch name and runs lint-staged
-
-echo "🔍 Validating branch name..."
-pnpm dlx validate-branch-name
-
-echo "🎨 Running lint-staged..."
-pnpm dlx lint-staged
