@@ -1,17 +1,16 @@
-# Designli Next.js Frontend Template
+# Lucit Labs Landing Page
 
-A production-ready Next.js 16 starter template with React 19, featuring a modular architecture, authentication flows, API integration patterns, and modern styling with TailwindCSS 4.
+A Next.js 16 + React 19 landing page for Lucit Labs, styled with TailwindCSS 4 and Framer Motion.
 
 ## ✨ Features
 
 - **Next.js 16** with App Router and React 19
 - **TailwindCSS 4** with CSS variables for theming
-- **shadcn/ui** components (New York style) pre-configured
 - **React Query** for data fetching with global error handling
 - **Zustand** for lightweight state management
 - **React Hook Form + Zod** for form handling and validation
-- **Authentication** with cookie-based session tokens
-- **Modular architecture** for scalable feature development
+- **Lucit-branded landing UI** with animated gradient/noise background
+- **Static export ready** for GitHub Pages deployment
 - **TypeScript** configured with strict mode
 
 ---
@@ -67,7 +66,7 @@ src/
 │           └── LanguageSelector.tsx
 │
 ├── i18n.ts              # Internationalization configuration
-├── middleware.tsx       # Auth protection & token injection
+├── proxy.ts             # Next.js proxy route guard/header handling
 │
 ├── modules/             # Feature modules (domain-specific)
 │   └── auth/
@@ -129,9 +128,9 @@ Server actions in `src/actions/` handle secure server-side operations:
 - **`login.ts`** - Authenticates users and sets HTTP-only session cookies
 - **`logout.ts`** - Clears session and redirects to home
 
-### Middleware
+### Proxy
 
-The `middleware.tsx` provides:
+The `proxy.ts` provides:
 
 - **Route protection** - Redirects unauthenticated users from `/dashboard/*`
 - **Auto-redirect** - Sends authenticated users from `/` to `/dashboard`
@@ -203,7 +202,7 @@ import { cn } from "@/shared/utils/tailwind";
 
 ### Protected Routes
 
-Configure protected routes in `middleware.tsx`:
+Configure protected routes in `proxy.ts`:
 
 ```typescript
 const protectedRoutes = ["/dashboard"];
@@ -339,7 +338,7 @@ const locales = new Set(['en', 'es', 'fr']);
 
 #### 3. Update Middleware
 
-In `src/middleware.tsx`, add the new locale to the middleware configuration:
+In `src/proxy.ts`, add the new locale to the proxy configuration:
 
 ```typescript
 export default createMiddleware({
@@ -397,12 +396,21 @@ pnpm lint       # Run ESLint
 
 ## 🚢 Deployment
 
-Deployments should be controlled by the CI/CD pipeline only.
+### GitHub Pages (Static)
 
-- Disable automatic Vercel deployments from the `main` branch.
-- Keep deployment responsibility in the pipeline so all checks and gates run before release.
+This repository is configured to deploy static output to GitHub Pages:
 
-This avoids direct auto-deploys from GitHub pushes and ensures a single, consistent deployment flow.
+- Next.js static export is enabled in `next.config.ts` (`output: "export"`).
+- GitHub Pages workflow is defined in `.github/workflows/deploy-github-pages.yml`.
+- On pushes to `main`, CI builds and uploads the `out` folder, then deploys to Pages.
+
+#### Required GitHub Settings
+
+1. Go to **Repository Settings → Pages**.
+2. Set **Source** to **GitHub Actions**.
+3. Ensure your default branch is `main`.
+
+After the first successful workflow run, GitHub will publish the site URL automatically.
 
 ---
 

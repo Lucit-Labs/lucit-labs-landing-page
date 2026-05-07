@@ -1,17 +1,10 @@
-import { cookies } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
 
 const locales = new Set(['en', 'es']);
 const defaultLocale = 'en';
 
 export default getRequestConfig(async ({ locale }) => {
-  let resolvedLocale = locale;
-
-  if (!resolvedLocale) {
-    const cookieStore = await cookies();
-    const localeCookie = cookieStore.get('NEXT_LOCALE');
-    resolvedLocale = localeCookie?.value || defaultLocale;
-  }
+  const resolvedLocale = locale || defaultLocale;
   const validLocale =
     resolvedLocale && locales.has(resolvedLocale)
       ? resolvedLocale

@@ -3,9 +3,9 @@ import React, { ReactNode } from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getLocale } from 'next-intl/server';
 
 import { I18nProvider } from '@/shared/providers/translator.provider';
+import enMessages from '../../messages/en.json';
 
 import type { Metadata } from 'next';
 
@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     'Lucit Labs builds modern software for medical, economic, fintech, and architectural domains with AI modernization and compliance-ready engineering.',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
+  const locale = 'en';
+  const messages = enMessages;
 
   return (
     <html lang={locale}>
