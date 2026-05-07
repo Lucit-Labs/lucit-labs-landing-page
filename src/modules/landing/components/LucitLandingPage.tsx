@@ -11,7 +11,6 @@ import {
   Shield,
   Workflow,
 } from 'lucide-react';
-import Image from 'next/image';
 
 const specialties = [
   {
@@ -43,6 +42,8 @@ const capabilities = [
 ];
 
 export function LucitLandingPage() {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f7f9fb] px-4 py-4 text-[#0f172a] md:px-6 lg:px-8">
       <motion.div
@@ -119,18 +120,15 @@ export function LucitLandingPage() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="w-full rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)]"
+          className="w-full rounded-2xl border border-[#e2e8f0] bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] md:p-4"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4">
+            <div className="min-w-0 flex-1">
               <div className="rounded-xl p-0">
-                <Image
-                  src="/Lucit-Logo-no-bg.png"
+                <img
+                  src={`${basePath}/Lucit-Logo-no-bg.png`}
                   alt="Lucit Labs logo"
-                  width={1150}
-                  height={350}
-                  className="h-40 w-auto object-contain md:h-52 lg:h-56"
-                  priority
+                  className="h-16 w-auto max-w-full object-contain sm:h-20 md:h-28 lg:h-32"
                 />
               </div>
             </div>
@@ -158,7 +156,7 @@ export function LucitLandingPage() {
               type="button"
               whileHover={{ y: -1, scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className="rounded-xl bg-[linear-gradient(140deg,#007AFF_0%,#3D5AFE_52%,#2921D1_100%)] px-6 py-3 text-base font-semibold text-white shadow-[0_6px_16px_rgba(61,90,254,0.28)] transition-[filter] hover:brightness-110"
+              className="rounded-xl bg-[linear-gradient(140deg,#007AFF_0%,#3D5AFE_52%,#2921D1_100%)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(61,90,254,0.28)] transition-[filter] hover:brightness-110 md:px-6 md:py-3 md:text-base"
             >
               Contact Sales
             </motion.button>
