@@ -1,0 +1,107 @@
+name: "Slack: deploy notify"
+description: "Send Slack notification when deployment starts and ends"
+
+inputs:
+  webhook_url:
+    description: "Slack Incoming Webhook URL"
+    required: true
+  phase:
+    description: "start | complete"
+    required: true
+  environment:
+    description: "develop | staging | production"
+    required: false
+    default: "develop"
+  status:
+    description: "Pass (success/failure) when phase=complete"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Set SHORT_SHA for Commit
+      shell: bash
+      run: |
+        echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+    - name: Build & send Slack payload
+      shell: bash
+      env:
+        WEBHOOK_URL: ${{ inputs.webhook_url }}
+        PHASE: ${{ inputs.phase }}
+        ENVIRONMENT: ${{ inputs.environment }}
+        STATUS_IN: ${{ inputs.status }}
+        WF: ${{ github.workflow }}
+        REPO: ${{ github.repository }}
+        REF: ${{ github.ref }}
+        AUTHOR: ${{ github.event.head_commit.author.name }}
+        COMMIT_URL: ${{ github.event.head_commit.url }}
+        RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        SHORT_SHA="${SHORT_SHA:-${GITHUB_SHA:0:7}}"
+        REPO_LINK="<https://github.com/${REPO}|${REPO}>"
+        COMMIT_LINK="<${COMMIT_URL:-https://github.com/${REPO}/commit/${GITHUB_SHA}}|${SHORT_SHA}>"
+        RUN_LINK="<https://github.com/${REPO}/actions/runs/${RUN_ID}|View on GitHub>"
+
+        if [[ "$PHASE" == "start" ]]; then
+          jq -n \
+            --arg wf "$WF" \
+            --arg repo "$REPO_LINK" \
+            --arg env "$ENVIRONMENT" \
+            --arg author "$AUTHOR" \
+            --arg ref "$REF" \
+            --arg commit "$COMMIT_LINK" \
+            '{
+              text: "*Deployment Notification*",
+              attachments: [
+                {
+                  color: "#4287f5",
+                  fields: [
+                    { title: "Status",      value: ("🚀 Workflow *"+$wf+"* has started."), short: false },
+                    { title: "Repo",        value: $repo,   short: false },
+                    { title: "Environment", value: $env,    short: true  },
+                    { title: "Author",      value: $author, short: true  },
+                    { title: "Branch",      value: $ref,    short: true  },
+                    { title: "Commit",      value: $commit, short: true  }
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -X POST -H 'Content-type: application/json' --data @- "$WEBHOOK_URL" >/dev/null
+        else
+          STATUS="✅ Success"
+          COLOR="#36a64f"
+          if [[ "${STATUS_IN:-success}" != "success" ]]; then
+            STATUS="❌ Failure"
+            COLOR="#ff4d4d"
+          fi
+          jq -n \
+            --arg status "$STATUS" \
+            --arg wf "$WF" \
+            --arg repo "$REPO_LINK" \
+            --arg env "$ENVIRONMENT" \
+            --arg author "$AUTHOR" \
+            --arg ref "$REF" \
+            --arg commit "$COMMIT_LINK" \
+            --arg run "$RUN_LINK" \
+            --arg color "$COLOR" \
+            '{
+              text: "*Deployment Notification*",
+              attachments: [
+                {
+                  color: $color,
+                  fields: [
+                    { title: "Status",    value: $status, short: true  },
+                    { title: "Workflow",  value: $wf,     short: true  },
+                    { title: "Repo",      value: $repo,   short: false },
+                    { title: "Environment", value: $env,  short: true  },
+                    { title: "Author",    value: $author, short: true  },
+                    { title: "Branch",    value: $ref,    short: true  },
+                    { title: "Commit",    value: $commit, short: true  },
+                    { title: "Build Log", value: $run,    short: false }
+                  ]
+                }
+              ]
+            }' \
+          | curl -sS -X POST -H 'Content-type: application/json' --data @- "$WEBHOOK_URL" >/dev/null
+        fi

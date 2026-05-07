@@ -1,0 +1,41 @@
+# Prettier Ignore File
+# Files and directories that should not be formatted
+
+# Build outputs
+.cache
+.next
+build
+dist
+out
+
+# Dependencies
+node_modules
+.pnp.*
+.yarn
+.pnpm-store
+
+# Package manager files
+package.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Public assets
+public
+
+# Configuration files
+*.yml
+*.yaml
+
+# IDE settings
+.vscode
+.idea
+
+# Documentation (as per user rules)
+README.md
+*.md
+
+# Environment files
+.env
+.env.local
+.env.*.local

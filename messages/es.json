@@ -1,0 +1,24 @@
+{
+  "welcome": {
+    "cardExampleTitle": "Tailwind CSS con Módulos CSS",
+    "cardExampleMessage": "Este es solo un componente de prueba para verificar los módulos CSS con TailwindCSS.",
+    "getStarted": "Comienza editando",
+    "languageLink": "🌐 Idioma",
+    "findInDepthLanguage": "Encuentra información detallada sobre la configuración de idioma.",
+    "docs": "Docs",
+    "findInDepthDocs": "Encuentra información detallada sobre las características y la API de Next.js.",
+    "learn": "Aprende",
+    "findInDepthLearn": "Aprende sobre Next.js en un curso interactivo con&nbsp;cuestionarios!",
+    "templates": "Plantillas",
+    "findInDepthTemplates": "Explora plantillas iniciales para Next.js.",
+    "deploy": "Despliegue",
+    "findInDepthDeploy": "Despliega instantáneamente tu sitio Next.js a una URL compartible con Vercel."
+  },
+  "language": {
+    "title": "Configuración de Idioma",
+    "select": "Seleccionar Idioma",
+    "changing": "Cambiando idioma...",
+    "clickToChange": "O haz clic para cambiar:",
+    "current": "Actual"
+  }
+}

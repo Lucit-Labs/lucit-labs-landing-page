@@ -1,0 +1,101 @@
+name: PR Validation
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set Short SHA for Commit
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+
+      - name: Notify Slack (PR Validation Starting)
+        if: always()
+        run: |
+          PAYLOAD="{
+            \"text\": \"*PR Validation Notification*\",
+            \"attachments\": [
+              {
+                \"color\": \"#4287f5\",
+                \"fields\": [
+                  { \"title\": \"Status\", \"value\": \"🚀 *${{ github.workflow }}* has started.\", \"short\": false },
+                  { \"title\": \"Repository\", \"value\": \"<https://github.com/${{ github.repository }}|${{ github.repository }}>\", \"short\": false },
+                  { \"title\": \"Pull Request\", \"value\": \"<${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }}>\", \"short\": true },
+                  { \"title\": \"Author\", \"value\": \"${{ github.event.pull_request.user.login }}\", \"short\": true },
+                  { \"title\": \"Branch\", \"value\": \"${{ github.head_ref }}\", \"short\": true },
+                  { \"title\": \"Commit\", \"value\": \"<${{ github.event.pull_request.head.repo.html_url }}/commit/${{ github.sha }}|${{ env.SHORT_SHA }}>\", \"short\": true },
+                  { \"title\": \"Title\", \"value\": \"${{ github.event.pull_request.title }}\", \"short\": false }
+                ]
+              }
+            ]
+          }"
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" $SLACK_WEBHOOK_URL
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ENABLE THESE STEPS AFTER PASSING THE ESLINT AND PRETTIER CHECKS FOR LEVEL 1
+      - name: Check code formatting
+        run: pnpm run format:check
+
+      - name: Run Linter
+        run: pnpm run lint
+
+      - name: TypeScript Compilation Check
+        run: pnpm exec tsc --noEmit
+
+      # ENABLE THIS STEP IF YOU HAVE TESTS
+      # - name: Run Tests
+      #   run: npm test
+
+      - name: Notify Slack (PR Validation Complete)
+        if: always()
+        run: |
+          STATUS="✅ Success"
+          COLOR="#36a64f"
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌ Failure"
+            COLOR="#ff4d4d"
+          fi
+          PAYLOAD="{
+            \"text\": \"*PR Validation Notification*\",
+            \"attachments\": [
+              {
+                \"color\": \"$COLOR\",
+                \"fields\": [
+                  { \"title\": \"Status\", \"value\": \"$STATUS\", \"short\": true },
+                  { \"title\": \"Workflow\", \"value\": \"${{ github.workflow }}\", \"short\": true },
+                  { \"title\": \"Repository\", \"value\": \"<https://github.com/${{ github.repository }}|${{ github.repository }}>\", \"short\": false },
+                  { \"title\": \"Pull Request\", \"value\": \"<${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }}>\", \"short\": true },
+                  { \"title\": \"Author\", \"value\": \"${{ github.event.pull_request.user.login }}\", \"short\": true },
+                  { \"title\": \"Branch\", \"value\": \"${{ github.head_ref }}\", \"short\": true },
+                  { \"title\": \"Commit\", \"value\": \"<${{ github.event.pull_request.head.repo.html_url }}/commit/${{ github.sha }}|${{ env.SHORT_SHA }}>\", \"short\": true },
+                  { \"title\": \"Title\", \"value\": \"${{ github.event.pull_request.title }}\", \"short\": false },
+                  { \"title\": \"Details\", \"value\": \"<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View on GitHub>\", \"short\": false }
+                ]
+              }
+            ]
+          }"
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" $SLACK_WEBHOOK_URL

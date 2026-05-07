@@ -1,0 +1,113 @@
+name: Vercel Deployment
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+  # Replace with hostnames attached to your Vercel project (Settings → Domains).
+  STAGING_ALIAS: staging.example.com
+  DEVELOP_ALIAS: develop.example.com
+
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  NODE_VERSION: "24"
+  PNPM_VERSION: "10"
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    outputs:
+      next_branch: ${{ steps.promotion.outputs.next_branch }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment context
+        run: |
+          case "${{ github.ref_name }}" in
+            main)
+              echo "FULL_ENVIRONMENT=production" >> $GITHUB_ENV
+              echo "IS_PRODUCTION=true" >> $GITHUB_ENV
+              echo "DEPLOY_ALIAS=" >> $GITHUB_ENV
+              ;;
+            staging)
+              echo "FULL_ENVIRONMENT=staging" >> $GITHUB_ENV
+              echo "IS_PRODUCTION=false" >> $GITHUB_ENV
+              echo "DEPLOY_ALIAS=${{ env.STAGING_ALIAS }}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "FULL_ENVIRONMENT=develop" >> $GITHUB_ENV
+              echo "IS_PRODUCTION=false" >> $GITHUB_ENV
+              echo "DEPLOY_ALIAS=${{ env.DEVELOP_ALIAS }}" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Notify Slack (Starting)
+        if: always()
+        uses: ./.github/actions/slack-deploy-notify
+        with:
+          webhook_url: ${{ env.SLACK_WEBHOOK_URL }}
+          phase: start
+          environment: ${{ env.FULL_ENVIRONMENT }}
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/vercel-build
+        with:
+          vercel_token: ${{ env.VERCEL_TOKEN }}
+          vercel_org_id: ${{ env.VERCEL_ORG_ID }}
+          vercel_project_id: ${{ env.VERCEL_PROJECT_ID }}
+          is_production: ${{ env.IS_PRODUCTION }}
+          environment: ${{ env.FULL_ENVIRONMENT }}
+          node_version: ${{ env.NODE_VERSION }}
+          pnpm_version: ${{ env.PNPM_VERSION }}
+
+      - name: Deploy
+        id: deploy
+        if: steps.build.outcome == 'success'
+        uses: ./.github/actions/vercel-deploy
+        with:
+          vercel_token: ${{ env.VERCEL_TOKEN }}
+          vercel_org_id: ${{ env.VERCEL_ORG_ID }}
+          vercel_project_id: ${{ env.VERCEL_PROJECT_ID }}
+          is_production: ${{ env.IS_PRODUCTION }}
+          alias: ${{ env.DEPLOY_ALIAS }}
+
+      - name: Notify Slack (Complete)
+        if: always()
+        uses: ./.github/actions/slack-deploy-notify
+        with:
+          webhook_url: ${{ env.SLACK_WEBHOOK_URL }}
+          phase: complete
+          environment: ${{ env.FULL_ENVIRONMENT }}
+          status: ${{ job.status }}
+
+      - name: Set promotion target
+        id: promotion
+        if: github.ref_name != 'main'
+        run: |
+          case "${{ github.ref_name }}" in
+            develop) echo "next_branch=staging" >> $GITHUB_OUTPUT ;;
+            staging) echo "next_branch=main" >> $GITHUB_OUTPUT ;;
+          esac
+
+  create-next-step-pr:
+    needs: deploy
+    if: github.ref_name != 'main'
+    uses: ./.github/workflows/reusable-create-pr.yml
+    secrets: inherit
+    with:
+      base_branch: ${{ needs.deploy.outputs.next_branch }}
+      head_branch: ${{ github.ref_name }}

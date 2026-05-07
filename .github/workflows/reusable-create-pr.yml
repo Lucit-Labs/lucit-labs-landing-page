@@ -1,0 +1,42 @@
+name: Reusable - Create PR if missing
+on:
+  workflow_call:
+    inputs:
+      base_branch:
+        required: true
+        type: string
+      head_branch:
+        required: false
+        type: string
+      body:
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BASE_BRANCH: ${{ inputs.base_branch }}
+      HEAD_BRANCH: ${{ inputs.head_branch || github.head_ref || github.ref_name }}
+      BODY: ${{ inputs.body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if existing ${{ env.HEAD_BRANCH }} -> ${{ env.BASE_BRANCH }} PR exists
+        id: check-pr
+        run: |
+          PR_ID=$(gh pr list --base ${{ env.BASE_BRANCH }} --head ${{ env.HEAD_BRANCH }} --json id --jq .[].id)
+          echo $PR_ID
+          echo "PR_ID=${PR_ID}" >> $GITHUB_OUTPUT
+
+      - if: ${{ steps.check-pr.outputs.PR_ID == null || steps.check-pr.outputs.PR_ID == '' }}
+        name: Create ${{ env.HEAD_BRANCH }} -> ${{ env.BASE_BRANCH }} PR
+        run: gh pr create --base "${BASE_BRANCH}" --head "${HEAD_BRANCH}" --title "Promote ${HEAD_BRANCH} → ${BASE_BRANCH}" --body "${BODY:-Automated promotion PR opened by CI.}"

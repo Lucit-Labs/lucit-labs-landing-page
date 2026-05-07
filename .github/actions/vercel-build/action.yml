@@ -1,0 +1,65 @@
+name: "Vercel Build"
+description: "Pulls Vercel settings and builds the project locally"
+
+inputs:
+  vercel_token:
+    description: "Vercel API token"
+    required: true
+  vercel_org_id:
+    description: "Vercel organization ID"
+    required: true
+  vercel_project_id:
+    description: "Vercel project ID"
+    required: true
+  is_production:
+    description: "Whether this is a production build"
+    required: true
+  environment:
+    description: "Environment name (production, staging, develop)"
+    required: true
+  node_version:
+    description: "Node.js version"
+    required: false
+    default: "24"
+  pnpm_version:
+    description: "pnpm version"
+    required: false
+    default: "10"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm_version }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node_version }}
+        cache: "pnpm"
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Pull Vercel Project Settings
+      shell: bash
+      env:
+        VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
+        VERCEL_PROJECT_ID: ${{ inputs.vercel_project_id }}
+      run: npx vercel@latest pull --yes --token=${{ inputs.vercel_token }}
+
+    - name: Build Project
+      shell: bash
+      env:
+        VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
+        VERCEL_PROJECT_ID: ${{ inputs.vercel_project_id }}
+        NEXT_PUBLIC_APP_ENV: ${{ inputs.environment }}
+      run: |
+        if [ "${{ inputs.is_production }}" = "true" ]; then
+          npx vercel@latest build --prod --token=${{ inputs.vercel_token }}
+        else
+          npx vercel@latest build --token=${{ inputs.vercel_token }}
+        fi
